@@ -1,0 +1,45 @@
+{
+  "titulo": "EduLivro - Portal Pedagógico Gratuito",
+  "descricao": "Portal pedagógico gratuito para divulgação de material educacional no Brasil",
+  "versao": "1.1.0",
+  "autor": "MiniMax Agent",
+  "data_versao": "2025-11-19",
+  "contato": {
+    "email": "contato@edulivro.org",
+    "site": "https://edulivro.org"
+  },
+  "configuracoes": {
+    "items_por_pagina": 12,
+    "filtro_padrao": "todos",
+    "busca_automatica": true,
+    "tempo_debounce": 300,
+    "mostrar_estatisticas": true,
+    "urls_relativas": true
+  },
+  "recursos": {
+    "busca_avancada": true,
+    "filtros_multiplos": true,
+    "visualizacao_3d": true,
+    "compartilhamento": true,
+    "responsivo": true,
+    "modo_escuro": false
+  },
+  "seguranca": {
+    "validacao_xss": true,
+    "sanitizacao_dados": true,
+    "url_encoding": true,
+    "validacao_json": true
+  },
+  "tema": {
+    "cor_primaria": "#4CAF50",
+    "cor_secundaria": "#2196F3",
+    "cor_acento": "#FF9800",
+    "fonte_principal": "Segoe UI, Tahoma, Geneva, Verdana, sans-serif"
+  },
+  "metadata": {
+    "language": "pt-BR",
+    "keywords": ["educação", "portal", "gratuito", "materiais educacionais", "brasil"],
+    "author": "EduLivro Team",
+    "robots": "index, follow"
+  }
+}
