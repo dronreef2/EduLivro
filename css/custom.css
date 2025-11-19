@@ -1,0 +1,204 @@
+/**
+ * Estilos customizados do EduLivro
+ * CSS adicional para melhorias de UX e acessibilidade
+ */
+
+/* Variáveis CSS para tema customizável */
+:root {
+    --cor-primaria: #4CAF50;
+    --cor-secundaria: #2196F3;
+    --cor-acento: #FF9800;
+    --fonte-principal: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Melhorias de acessibilidade - foco visível */
+*:focus {
+    outline: 2px solid var(--cor-primaria);
+    outline-offset: 2px;
+}
+
+/* Skip to main content link (para leitores de tela) */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--cor-primaria);
+    color: white;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 100;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* Contador de resultados */
+.contador-resultados {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+
+/* Área de controles de filtro */
+.filtros-controles {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Botão de limpar filtros */
+.btn-limpar {
+    background: #6c757d;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.btn-limpar:hover {
+    background: #5a6268;
+}
+
+.btn-limpar:focus {
+    outline: 2px solid var(--cor-primaria);
+    outline-offset: 2px;
+}
+
+/* Estados de loading e erro com ARIA */
+[role="status"][aria-busy="true"]::after {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-left: 8px;
+    border: 2px solid #666;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spinner 0.6s linear infinite;
+}
+
+@keyframes spinner {
+    to { transform: rotate(360deg); }
+}
+
+/* Mensagens de erro melhoradas */
+[role="alert"] {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Lazy loading para imagens */
+img[loading="lazy"] {
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+img[loading="lazy"].loaded,
+img[loading="lazy"]:not([loading]) {
+    opacity: 1;
+}
+
+/* Melhorias para botões desabilitados */
+.btn[disabled],
+.btn[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Modo de alto contraste (acessibilidade) */
+@media (prefers-contrast: high) {
+    :root {
+        --cor-primaria: #000;
+        --cor-secundaria: #000;
+        --cor-acento: #000;
+    }
+    
+    .livro-card {
+        border: 2px solid #000;
+    }
+}
+
+/* Modo escuro (se habilitado no futuro) */
+@media (prefers-color-scheme: dark) {
+    /* Preparado para implementação futura */
+    /* Descomente quando modo_escuro for habilitado em config.json */
+    /*
+    body {
+        background: #1a1a1a;
+        color: #e0e0e0;
+    }
+    
+    .livro-card {
+        background: #2a2a2a;
+        color: #e0e0e0;
+    }
+    */
+}
+
+/* Responsividade para telas muito pequenas */
+@media (max-width: 480px) {
+    .filtros {
+        flex-direction: column;
+    }
+    
+    .filtro-grupo {
+        width: 100%;
+    }
+    
+    .filtros-controles {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn-limpar {
+        width: 100%;
+    }
+}
+
+/* Print styles */
+@media print {
+    .search-container,
+    .botoes,
+    .btn-voltar {
+        display: none;
+    }
+    
+    .livro-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+
+/* Transições suaves para elementos interativos */
+.livro-card,
+.btn,
+.btn-ver,
+.btn-voltar {
+    transition: all 0.2s ease;
+}
+
+/* Indicador visual de filtros ativos */
+.filtro-grupo select:not([value=""]),
+.filtro-grupo input:not([value=""]) {
+    border-color: var(--cor-primaria);
+    border-width: 2px;
+}

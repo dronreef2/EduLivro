@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EduLivro - Portal Pedagógico Gratuito</title>
     <link rel="stylesheet" href="https://unpkg.com/mvp.css@1.12/mvp.css">
+    <link rel="stylesheet" href="css/custom.css">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { font-family: var(--fonte-principal, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif); }
         .hero { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 10px; margin-bottom: 2rem; }
         .search-container { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
         .filtros { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
@@ -24,7 +25,7 @@
         .livro-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
         .tag { background: #e3f2fd; color: #1976d2; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.8rem; }
         .stats { display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 0.9rem; color: #666; }
-        .btn-ver { background: #4CAF50; color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn-ver { background: var(--cor-primaria, #4CAF50); color: white; padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; }
         .btn-ver:hover { background: #45a049; }
         .model-viewer-container { display: none; margin: 1rem 0; }
         .loading { text-align: center; padding: 2rem; color: #666; }
@@ -43,25 +44,29 @@
 
     <main>
         <section class="search-container">
-            <h2>Buscar no Catálogo</h2>
+            <div class="filtros-controles">
+                <h2 style="margin: 0;">Buscar no Catálogo</h2>
+                <button id="btn-limpar-filtros" class="btn-limpar">Limpar Filtros</button>
+            </div>
             <div class="filtros">
                 <div class="filtro-grupo">
                     <label for="busca">Buscar:</label>
-                    <input type="text" id="busca" placeholder="Título, autor ou descrição...">
+                    <input type="text" id="busca" placeholder="Título, autor ou descrição..." aria-label="Buscar materiais">
                 </div>
                 <div class="filtro-grupo">
                     <label for="categoria">Categoria:</label>
-                    <select id="categoria">
+                    <select id="categoria" aria-label="Filtrar por categoria">
                         <option value="">Todas as categorias</option>
                     </select>
                 </div>
                 <div class="filtro-grupo">
                     <label for="nivel">Nível:</label>
-                    <select id="nivel">
+                    <select id="nivel" aria-label="Filtrar por nível">
                         <option value="">Todos os níveis</option>
                     </select>
                 </div>
             </div>
+            <div id="contador-resultados" class="contador-resultados" aria-live="polite"></div>
         </section>
 
         <section id="catalogo">
@@ -72,231 +77,7 @@
         </section>
     </main>
 
-    <script>
-        // Configuração do site
-        const SITE_CONFIG = {
-            titulo: "EduLivro - Portal Pedagógico Gratuito",
-            descricao: "Portal pedagógico gratuito para divulgação de material educacional no Brasil",
-            versao: "1.1.0"
-        };
-
-        // Estado da aplicação
-        let todosOsLivros = [];
-        let livrosFiltrados = [];
-
-        // Função para escapar HTML e prevenir XSS
-        function escapeHtml(texto) {
-            const mapa = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return texto.replace(/[&<>"']/g, function(m) { return mapa[m]; });
-        }
-
-        // Validação de estrutura de livro
-        function validarLivro(livro) {
-            const obrigatorios = ['id', 'titulo', 'autor', 'descricao', 'categoria', 'nivel', 'urlCapa'];
-            return obrigatorios.every(campo => livro.hasOwnProperty(campo));
-        }
-
-        // Carregar configuração
-        async function carregarConfig() {
-            try {
-                const response = await fetch('config.json');
-                if (!response.ok) throw new Error('Erro ao carregar config.json');
-                const config = await response.json();
-                return config;
-            } catch (error) {
-                console.warn('Usando configuração padrão:', error);
-                return {
-                    titulo: SITE_CONFIG.titulo,
-                    descricao: SITE_CONFIG.descricao,
-                    versao: SITE_CONFIG.versao
-                };
-            }
-        }
-
-        // Carregar catálogo
-        async function carregarCatalogo() {
-            try {
-                const response = await fetch('database.json');
-                if (!response.ok) throw new Error('Erro ao carregar database.json');
-                
-                const data = await response.json();
-                
-                if (!data.livros || !Array.isArray(data.livros)) {
-                    throw new Error('Formato inválido de dados');
-                }
-
-                // Validar todos os livros
-                const livrosValidos = data.livros.filter(livro => {
-                    if (!validarLivro(livro)) {
-                        console.warn('Livro inválido encontrado:', livro);
-                        return false;
-                    }
-                    return true;
-                });
-
-                if (livrosValidos.length === 0) {
-                    throw new Error('Nenhum livro válido encontrado');
-                }
-
-                todosOsLivros = livrosValidos;
-                livrosFiltrados = [...todosOsLivros];
-                
-                console.log(`Carregados ${todosOsLivros.length} livros`);
-                
-                // Preencher filtros
-                preencherFiltros();
-                
-                // Renderizar resultados
-                renderizarResultados();
-                
-            } catch (error) {
-                console.error('Erro ao carregar catálogo:', error);
-                document.getElementById('loading').innerHTML = 
-                    `<p>Erro ao carregar catálogo: ${escapeHtml(error.message)}</p>`;
-            }
-        }
-
-        // Preencher filtros com opções dinâmicas
-        function preencherFiltros() {
-            const categorias = [...new Set(todosOsLivros.map(livro => livro.categoria))].sort();
-            const niveis = [...new Set(todosOsLivros.map(livro => livro.nivel))].sort();
-
-            const selectCategoria = document.getElementById('categoria');
-            const selectNivel = document.getElementById('nivel');
-
-            // Limpar opções existentes (exceto a primeira)
-            while (selectCategoria.children.length > 1) {
-                selectCategoria.removeChild(selectCategoria.lastChild);
-            }
-            while (selectNivel.children.length > 1) {
-                selectNivel.removeChild(selectNivel.lastChild);
-            }
-
-            // Adicionar categorias
-            categorias.forEach(categoria => {
-                const option = document.createElement('option');
-                option.value = categoria;
-                option.textContent = categoria;
-                selectCategoria.appendChild(option);
-            });
-
-            // Adicionar níveis
-            niveis.forEach(nivel => {
-                const option = document.createElement('option');
-                option.value = nivel;
-                option.textContent = nivel;
-                selectNivel.appendChild(option);
-            });
-        }
-
-        // Aplicar filtros com debounce para performance
-        let debounceTimer;
-        function aplicarFiltros() {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                const termoBusca = document.getElementById('busca').value.toLowerCase().trim();
-                const categoriaSelecionada = document.getElementById('categoria').value;
-                const nivelSelecionado = document.getElementById('nivel').value;
-
-                livrosFiltrados = todosOsLivros.filter(livro => {
-                    // Filtro por busca
-                    const matchBusca = !termoBusca || 
-                        livro.titulo.toLowerCase().includes(termoBusca) ||
-                        livro.autor.toLowerCase().includes(termoBusca) ||
-                        livro.descricao.toLowerCase().includes(termoBusca) ||
-                        (livro.tags && livro.tags.some(tag => tag.toLowerCase().includes(termoBusca)));
-
-                    // Filtro por categoria
-                    const matchCategoria = !categoriaSelecionada || livro.categoria === categoriaSelecionada;
-
-                    // Filtro por nível
-                    const matchNivel = !nivelSelecionado || livro.nivel === nivelSelecionado;
-
-                    return matchBusca && matchCategoria && matchNivel;
-                });
-
-                renderizarResultados();
-            }, 300); // Debounce de 300ms
-        }
-
-        // Renderizar resultados
-        function renderizarResultados() {
-            const container = document.getElementById('resultados');
-            const loading = document.getElementById('loading');
-
-            if (livrosFiltrados.length === 0) {
-                container.innerHTML = '<p>Nenhum material encontrado com os filtros aplicados.</p>';
-                container.style.display = 'block';
-                loading.style.display = 'none';
-                return;
-            }
-
-            container.innerHTML = livrosFiltrados.map(livro => criarCardLivro(livro)).join('');
-            container.style.display = 'grid';
-            loading.style.display = 'none';
-        }
-
-        // Criar card de livro
-        function criarCardLivro(livro) {
-            const tagsHtml = livro.tags ? livro.tags.map(tag => 
-                `<span class="tag">${escapeHtml(tag)}</span>`
-            ).join('') : '';
-
-            return `
-                <div class="livro-card">
-                    <div class="livro-capa">
-                        ${livro.urlCapa ? 
-                            `<img src="${escapeHtml(livro.urlCapa)}" alt="${escapeHtml(livro.titulo)}" 
-                                  style="width: 100%; height: 200px; object-fit: cover;">` :
-                            '📚 Sem capa'
-                        }
-                    </div>
-                    <div class="livro-info">
-                        <h3 class="livro-titulo">${escapeHtml(livro.titulo)}</h3>
-                        <p class="livro-autor">por ${escapeHtml(livro.autor)}</p>
-                        <p class="livro-descricao">${escapeHtml(livro.descricao)}</p>
-                        <div class="livro-tags">${tagsHtml}</div>
-                        <div class="stats">
-                            <span>📂 ${escapeHtml(livro.categoria)}</span>
-                            <span>🎓 ${escapeHtml(livro.nivel)}</span>
-                        </div>
-                        <a href="livro.html?id=${encodeURIComponent(livro.id)}" class="btn-ver">
-                            Ver Material
-                        </a>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Inicializar aplicação
-        async function inicializar() {
-            try {
-                // Configurar event listeners
-                document.getElementById('busca').addEventListener('input', aplicarFiltros);
-                document.getElementById('categoria').addEventListener('change', aplicarFiltros);
-                document.getElementById('nivel').addEventListener('change', aplicarFiltros);
-
-                // Carregar dados
-                await carregarConfig();
-                await carregarCatalogo();
-                
-            } catch (error) {
-                console.error('Erro na inicialização:', error);
-                document.getElementById('loading').innerHTML = 
-                    `<p>Erro ao inicializar aplicação: ${escapeHtml(error.message)}</p>`;
-            }
-        }
-
-        // Iniciar quando a página carregar
-        document.addEventListener('DOMContentLoaded', inicializar);
-    </script>
-
-    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/catalogo.js"></script>
 </body>
 </html>
