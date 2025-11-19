@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Integração - EduLivro</title>
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css@1.12/mvp.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .test-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 10px; margin-bottom: 2rem; }
+        .test-section { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 1.5rem; }
+        .test-item { display: flex; align-items: center; padding: 0.75rem; border-left: 4px solid #ddd; margin-bottom: 0.5rem; background: #f8f9fa; }
+        .test-item.success { border-left-color: #4CAF50; background: #e8f5e9; }
+        .test-item.error { border-left-color: #f44336; background: #ffebee; }
+        .test-item.warning { border-left-color: #FF9800; background: #fff3e0; }
+        .test-icon { font-size: 1.5rem; margin-right: 1rem; }
+        .test-message { flex: 1; }
+        .test-detail { font-size: 0.9rem; color: #666; margin-top: 0.25rem; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .summary-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; }
+        .summary-number { font-size: 2.5rem; font-weight: bold; margin-bottom: 0.5rem; }
+        .summary-label { color: #666; font-size: 0.9rem; }
+        .btn-test { background: #4CAF50; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: bold; }
+        .btn-test:hover { background: #45a049; }
+        .loading { text-align: center; padding: 2rem; color: #666; }
+    </style>
+</head>
+<body>
+    <header class="test-header">
+        <h1>🧪 Teste de Integração - EduLivro</h1>
+        <p>Validação automática de estrutura de dados e configurações</p>
+        <button id="btn-executar" class="btn-test">▶ Executar Testes</button>
+    </header>
+
+    <main>
+        <div id="summary" class="summary" style="display: none;">
+            <div class="summary-card">
+                <div id="total-tests" class="summary-number">0</div>
+                <div class="summary-label">Total de Testes</div>
+            </div>
+            <div class="summary-card">
+                <div id="passed-tests" class="summary-number" style="color: #4CAF50;">0</div>
+                <div class="summary-label">Aprovados</div>
+            </div>
+            <div class="summary-card">
+                <div id="failed-tests" class="summary-number" style="color: #f44336;">0</div>
+                <div class="summary-label">Falharam</div>
+            </div>
+            <div class="summary-card">
+                <div id="warning-tests" class="summary-number" style="color: #FF9800;">0</div>
+                <div class="summary-label">Avisos</div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            Executando testes...
+        </div>
+
+        <div id="test-results"></div>
+    </main>
+
+    <script src="js/utils.js"></script>
+    <script>
+        let testResults = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            warnings: 0,
+            items: []
+        };
+
+        function addTestResult(status, message, detail = '') {
+            testResults.total++;
+            testResults[status === 'success' ? 'passed' : status === 'error' ? 'failed' : 'warnings']++;
+            testResults.items.push({ status, message, detail });
+        }
+
+        function renderResults() {
+            const container = document.getElementById('test-results');
+            container.innerHTML = '';
+
+            // Agrupar por categoria
+            const categories = {
+                'Estrutura de Dados': [],
+                'Validação de Campos': [],
+                'Configurações': [],
+                'Segurança': []
+            };
+
+            testResults.items.forEach((item, index) => {
+                let category = 'Estrutura de Dados';
+                if (item.message.includes('campo') || item.message.includes('ID')) {
+                    category = 'Validação de Campos';
+                } else if (item.message.includes('config') || item.message.includes('Configuração')) {
+                    category = 'Configurações';
+                } else if (item.message.includes('URL') || item.message.includes('segurança')) {
+                    category = 'Segurança';
+                }
+                categories[category].push(item);
+            });
+
+            // Renderizar cada categoria
+            Object.keys(categories).forEach(categoryName => {
+                if (categories[categoryName].length === 0) return;
+
+                const section = document.createElement('div');
+                section.className = 'test-section';
+                section.innerHTML = `<h3>${categoryName}</h3>`;
+
+                categories[categoryName].forEach(item => {
+                    const testItem = document.createElement('div');
+                    testItem.className = `test-item ${item.status}`;
+                    
+                    const icon = item.status === 'success' ? '✓' : item.status === 'error' ? '✗' : '⚠';
+                    
+                    testItem.innerHTML = `
+                        <div class="test-icon">${icon}</div>
+                        <div class="test-message">
+                            ${escapeHtml(item.message)}
+                            ${item.detail ? `<div class="test-detail">${escapeHtml(item.detail)}</div>` : ''}
+                        </div>
+                    `;
+                    section.appendChild(testItem);
+                });
+
+                container.appendChild(section);
+            });
+
+            // Atualizar resumo
+            document.getElementById('total-tests').textContent = testResults.total;
+            document.getElementById('passed-tests').textContent = testResults.passed;
+            document.getElementById('failed-tests').textContent = testResults.failed;
+            document.getElementById('warning-tests').textContent = testResults.warnings;
+            document.getElementById('summary').style.display = 'grid';
+        }
+
+        async function executarTestes() {
+            // Reset
+            testResults = {
+                total: 0,
+                passed: 0,
+                failed: 0,
+                warnings: 0,
+                items: []
+            };
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('test-results').innerHTML = '';
+            document.getElementById('summary').style.display = 'none';
+
+            try {
+                // Teste 1: Carregar database.json
+                let database;
+                try {
+                    database = await carregarJson('data/database.json');
+                    addTestResult('success', 'database.json carregado com sucesso');
+                } catch (error) {
+                    addTestResult('error', 'Falha ao carregar database.json', error.message);
+                    renderResults();
+                    document.getElementById('loading').style.display = 'none';
+                    return;
+                }
+
+                // Teste 2: Validar estrutura básica
+                if (database.metadata) {
+                    addTestResult('success', 'Campo metadata encontrado');
+                } else {
+                    addTestResult('warning', 'Campo metadata não encontrado');
+                }
+
+                if (database.livros && Array.isArray(database.livros)) {
+                    addTestResult('success', `Campo livros encontrado com ${database.livros.length} itens`);
+                } else {
+                    addTestResult('error', 'Campo livros não encontrado ou não é array');
+                    renderResults();
+                    document.getElementById('loading').style.display = 'none';
+                    return;
+                }
+
+                // Teste 3: Validar total de materiais
+                if (database.metadata && database.metadata.total_materiais === database.livros.length) {
+                    addTestResult('success', 'Total de materiais está correto');
+                } else {
+                    addTestResult('warning', `Total de materiais em metadata (${database.metadata?.total_materiais}) não corresponde ao array (${database.livros.length})`);
+                }
+
+                // Teste 4: Validar cada livro
+                const idsUnicos = new Set();
+                const niveisValidos = ['Iniciante', 'Intermediário', 'Avançado'];
+                
+                database.livros.forEach((livro, index) => {
+                    // Validar campos obrigatórios
+                    if (validarLivro(livro)) {
+                        addTestResult('success', `Livro #${index + 1} "${livro.titulo}" - estrutura válida`);
+                    } else {
+                        addTestResult('error', `Livro #${index + 1} - campos obrigatórios ausentes`);
+                    }
+
+                    // Validar IDs únicos
+                    if (idsUnicos.has(livro.id)) {
+                        addTestResult('error', `ID duplicado encontrado: ${livro.id}`);
+                    } else {
+                        idsUnicos.add(livro.id);
+                    }
+
+                    // Validar nível
+                    if (livro.nivel && !niveisValidos.includes(livro.nivel)) {
+                        addTestResult('warning', `Livro "${livro.titulo}" tem nível inválido: ${livro.nivel}`, `Níveis válidos: ${niveisValidos.join(', ')}`);
+                    }
+
+                    // Validar URLs
+                    if (livro.urlCapa && !validarUrl(livro.urlCapa)) {
+                        addTestResult('warning', `Livro "${livro.titulo}" tem URL de capa potencialmente insegura`);
+                    }
+
+                    if (livro.urlModelo3D && livro.urlModelo3D !== '' && !validarUrl(livro.urlModelo3D)) {
+                        addTestResult('warning', `Livro "${livro.titulo}" tem URL de modelo 3D potencialmente insegura`);
+                    }
+
+                    // Validar tags
+                    if (livro.tags && !Array.isArray(livro.tags)) {
+                        addTestResult('warning', `Livro "${livro.titulo}" - campo tags não é array`);
+                    }
+                });
+
+                // Teste 5: Carregar config.json
+                let config;
+                try {
+                    config = await carregarJson('data/config.json');
+                    addTestResult('success', 'config.json carregado com sucesso');
+                } catch (error) {
+                    addTestResult('warning', 'config.json não carregado - usando padrões', error.message);
+                }
+
+                // Teste 6: Validar configurações
+                if (config) {
+                    if (config.configuracoes) {
+                        addTestResult('success', 'Configurações encontradas');
+                        
+                        if (config.configuracoes.tempo_debounce && typeof config.configuracoes.tempo_debounce === 'number') {
+                            addTestResult('success', `Tempo de debounce configurado: ${config.configuracoes.tempo_debounce}ms`);
+                        }
+                    }
+
+                    if (config.tema) {
+                        addTestResult('success', 'Configurações de tema encontradas');
+                    }
+
+                    if (config.seguranca) {
+                        addTestResult('success', 'Configurações de segurança encontradas');
+                    }
+                }
+
+                // Teste 7: Verificar arquivos JS
+                const scripts = ['js/utils.js', 'js/catalogo.js', 'js/livro.js'];
+                for (const script of scripts) {
+                    try {
+                        const response = await fetch(script);
+                        if (response.ok) {
+                            addTestResult('success', `Script ${script} acessível`);
+                        } else {
+                            addTestResult('error', `Script ${script} não encontrado`);
+                        }
+                    } catch (error) {
+                        addTestResult('error', `Erro ao acessar ${script}`, error.message);
+                    }
+                }
+
+            } catch (error) {
+                addTestResult('error', 'Erro inesperado durante testes', error.message);
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            renderResults();
+        }
+
+        document.getElementById('btn-executar').addEventListener('click', executarTestes);
+    </script>
+</body>
+</html>
